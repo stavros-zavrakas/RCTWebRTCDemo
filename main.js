@@ -387,14 +387,12 @@ class RCTWebRTCDemo extends Component {
   }
 
   renderPeopleJoined() {
-    const users = mapHash(this.state.remoteList, (remote, index) => {
+    return mapHash(this.state.remoteList, (remote, index) => {
       return <RTCView key={index} streamURL={remote} style={styles.remoteView}/>
     });
-    return users;
   }
 
   render() {
-    const peers = this.renderPeopleJoined();
     return (
       <View style={styles.container}>
         {this.renderInfo()}
@@ -402,7 +400,7 @@ class RCTWebRTCDemo extends Component {
         {this.renderCameraSwitch()}
         {this.renderJoinCameraRoom()}
         {this.renderMyCamera()}
-        {peers.map(peer => peer ) }
+        {this.renderPeopleJoined()}
       </View>
     );
   }
