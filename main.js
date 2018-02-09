@@ -243,10 +243,13 @@ function getStats() {
 
 let container;
 
-const RCTWebRTCDemo = React.createClass({
-  getInitialState: function() {
+class RCTWebRTCDemo extends Component {
+  constructor(props) {
+    super(props);
+
     this.ds = new ListView.DataSource({rowHasChanged: (r1, r2) => true});
-    return {
+
+    this.state = {
       info: 'Initializing',
       status: 'init',
       roomID: '',
@@ -257,15 +260,18 @@ const RCTWebRTCDemo = React.createClass({
       textRoomData: [],
       textRoomValue: '',
     };
-  },
-  componentDidMount: function() {
+  }
+
+  componentDidMount() {
     container = this;
-  },
+  }
+
   _press(event) {
     this.refs.roomID.blur();
     this.setState({status: 'connect', info: 'Connecting'});
     join(this.state.roomID);
-  },
+  }
+
   _switchVideoType() {
     const isFront = !this.state.isFront;
     this.setState({isFront});
@@ -285,12 +291,14 @@ const RCTWebRTCDemo = React.createClass({
         pc && pc.addStream(localStream);
       }
     });
-  },
+  }
+
   receiveTextData(data) {
     const textRoomData = this.state.textRoomData.slice();
     textRoomData.push(data);
     this.setState({textRoomData, textRoomValue: ''});
-  },
+  }
+
   _textRoomPress() {
     if (!this.state.textRoomValue) {
       return
@@ -302,8 +310,21 @@ const RCTWebRTCDemo = React.createClass({
       pc.textDataChannel.send(this.state.textRoomValue);
     }
     this.setState({textRoomData, textRoomValue: ''});
-  },
-  _renderTextRoom() {
+  }
+
+  renderInfo() {
+    return (
+      <Text style={styles.welcome}>
+        {this.state.info}
+      </Text>
+    );
+  }
+
+  renderTextRoom() {
+    if (!this.state.textRoomConnected) {
+      return null;
+    }
+
     return (
       <View style={styles.listViewContainer}>
         <ListView
@@ -321,49 +342,71 @@ const RCTWebRTCDemo = React.createClass({
         </TouchableHighlight>
       </View>
     );
-  },
-  render() {
+  }
+  
+  renderCameraSwitch() {
+    const txt = this.state.isFront ? 'Use front camera' : 'Use back camera';
     return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          {this.state.info}
+      <View style={{flexDirection: 'row'}}>
+        <Text>
+          {txt}
         </Text>
-        {this.state.textRoomConnected && this._renderTextRoom()}
-        <View style={{flexDirection: 'row'}}>
-          <Text>
-            {this.state.isFront ? "Use front camera" : "Use back camera"}
-          </Text>
-          <TouchableHighlight
-            style={{borderWidth: 1, borderColor: 'black'}}
-            onPress={this._switchVideoType}>
-            <Text>Switch camera</Text>
-          </TouchableHighlight>
-        </View>
-        { this.state.status == 'ready' ?
-          (<View>
-            <TextInput
-              ref='roomID'
-              autoCorrect={false}
-              style={{width: 200, height: 40, borderColor: 'gray', borderWidth: 1}}
-              onChangeText={(text) => this.setState({roomID: text})}
-              value={this.state.roomID}
-            />
-            <TouchableHighlight
-              onPress={this._press}>
-              <Text>Enter room</Text>
-            </TouchableHighlight>
-          </View>) : null
-        }
-        <RTCView streamURL={this.state.selfViewSrc} style={styles.selfView}/>
-        {
-          mapHash(this.state.remoteList, function(remote, index) {
-            return <RTCView key={index} streamURL={remote} style={styles.remoteView}/>
-          })
-        }
+        <TouchableHighlight
+          style={{borderWidth: 1, borderColor: 'black'}}
+          onPress={this._switchVideoType.bind(this)}>
+          <Text>Switch camera</Text>
+        </TouchableHighlight>
       </View>
     );
   }
-});
+
+  renderJoinCameraRoom() {
+    if (this.state.status !== 'ready') {
+      return null;
+    }
+
+    return (
+      <View>
+        <TextInput
+          ref='roomID'
+          autoCorrect={false}
+          style={{width: 200, height: 40, borderColor: 'gray', borderWidth: 1}}
+          onChangeText={(text) => this.setState({roomID: text})}
+          value={this.state.roomID}
+        />
+        <TouchableHighlight
+          onPress={this._press.bind(this)}>
+          <Text>Enter room</Text>
+        </TouchableHighlight>
+      </View>
+    );
+  }
+
+  renderMyCamera() {
+    return <RTCView streamURL={this.state.selfViewSrc} style={styles.selfView}/>;
+  }
+
+  renderPeopleJoined() {
+    const users = mapHash(this.state.remoteList, (remote, index) => {
+      return <RTCView key={index} streamURL={remote} style={styles.remoteView}/>
+    });
+    return users;
+  }
+
+  render() {
+    const peers = this.renderPeopleJoined();
+    return (
+      <View style={styles.container}>
+        {this.renderInfo()}
+        {this.renderTextRoom()}
+        {this.renderCameraSwitch()}
+        {this.renderJoinCameraRoom()}
+        {this.renderMyCamera()}
+        {peers.map(peer => peer ) }
+      </View>
+    );
+  }
+};
 
 const styles = StyleSheet.create({
   selfView: {
